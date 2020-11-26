@@ -46,12 +46,11 @@ class HwinfoClient
     ulong magic_received_time;
 
     uint16_t idx = 0;
-    uint16_t reading_idx = 0;
 
     HwinfoSensorReadCompletedFunction cb = nullptr;
 
     template <typename T> 
-    bool valueByteParsed(HwValue<T>* hwValue, uint16_t offset, char ch);
+    bool valueParsed(HwValue<T>* hwValue, uint16_t offset, char* data, size_t len);
 
     void parse(char *data, size_t len);
     void onReadingCompleted();
@@ -61,8 +60,8 @@ class HwinfoClient
     void sendRequestPacket();
 
     bool isHelloPacket(char* data);
+    bool isDataStartPacket(char* data);
     bool isMagicPacket(char* data);
-    bool isMagic2Packet(char* data);
 
     AsyncClient* client;
     void onConnect();

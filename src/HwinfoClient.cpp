@@ -14,9 +14,13 @@ void HwinfoClient::onReadingCompleted() {
 }
 
 template<typename T>
-bool HwinfoClient::valueByteParsed(HwValue<T> *hwValue, uint16_t offset, char ch) {
-  if(idx >= offset && idx < offset + sizeof(hwValue->value)) {
-    hwValue->bytes[idx-offset] = ch;
+bool HwinfoClient::valueParsed(HwValue<T> *hwValue, uint16_t offset, char* data, size_t len) {
+  if(offset + sizeof(hwValue->value) > idx && offset < idx + len) {
+    uint16_t start = max(idx, offset);
+    uint16_t end = min(offset + sizeof(hwValue->value), idx + len);
+    char* src = data + start - idx;
+    uint8_t* dst = hwValue->bytes + max(0, idx - offset);
+    memcpy(dst, src, end - start);
 
     return true;
   } 
@@ -25,33 +29,21 @@ bool HwinfoClient::valueByteParsed(HwValue<T> *hwValue, uint16_t offset, char ch
 }
 
 void HwinfoClient::parse(char *data, size_t len) {
-  for(uint16_t i=0;i<len;i++, idx++) {
-    char ch = data[i];
+  valueParsed(&polling_time, HWINFO_OFFSET_POLLING_TIME, data, len);
+  valueParsed(&offset_of_readings, HWINFO_OFFSET_READINGS_OFFSET, data, len);
+  valueParsed(&size_of_reading, HWINFO_OFFSET_READINGS_SIZE, data, len);
+  valueParsed(&number_of_readings, HWINFO_OFFSET_READINGS, data, len);
 
-    if(valueByteParsed(&polling_time, HWINFO_OFFSET_POLLING_TIME, ch)
-     || valueByteParsed(&offset_of_readings, HWINFO_OFFSET_READINGS_OFFSET, ch)
-     || valueByteParsed(&size_of_reading, HWINFO_OFFSET_READINGS_SIZE, ch)
-     || valueByteParsed(&number_of_readings, HWINFO_OFFSET_READINGS, ch)) 
-    {
-      continue;
-    }
-
-    if(number_of_readings.value == 0) continue;
-
-    uint16_t reading_offset = offset_of_readings.value + (reading_idx * size_of_reading.value);
-    if(valueByteParsed(&reading.group, HWINFO_OFFSET_READING_GROUP + reading_offset, ch)
-      || valueByteParsed(&reading.id, HWINFO_OFFSET_READING_ID + reading_offset, ch)
-      || valueByteParsed(&reading.value, HWINFO_OFFSET_READING_VALUE + reading_offset, ch))
-    {
-      continue;
-    }
-
-    if(idx == reading_offset + size_of_reading.value) {
+  for(uint16_t reading_offset = offset_of_readings.value; reading_offset < idx + len; reading_offset += size_of_reading.value){
+    valueParsed(&reading.group, HWINFO_OFFSET_READING_GROUP + reading_offset, data, len);
+    valueParsed(&reading.id, HWINFO_OFFSET_READING_ID + reading_offset, data, len);
+    bool reading_value_parsed = valueParsed(&reading.value, HWINFO_OFFSET_READING_VALUE + reading_offset, data, len);
+    if(reading_value_parsed) {
       onReadingCompleted();
-      reading_idx++;
-      continue;
     }
   }
+
+  idx += len;
 }
 
 void HwinfoClient::handleData(char *data, size_t len) {
@@ -62,13 +54,12 @@ void HwinfoClient::handleData(char *data, size_t len) {
       return;
   }
 
-  if(isMagic2Packet(data)) {
+  if(isMagicPacket(data)) {
       return;
   }
 
-  if(isMagicPacket(data)) {
+  if(isDataStartPacket(data)) {
       idx=0;
-      reading_idx=0;
   }
 
   parse(data, len);
@@ -79,13 +70,13 @@ bool HwinfoClient::isHelloPacket(char* data) {
   return memcmp(packet, data, sizeof packet) == 0;
 }
 
-bool HwinfoClient::isMagicPacket(char* data) {
+bool HwinfoClient::isDataStartPacket(char* data) {
   uint8_t packet[] = { 0x50, 0x52, 0x57, 0x48, 0x02 };
   return memcmp(packet, data, sizeof packet) == 0;
 }
 
-bool HwinfoClient::isMagic2Packet(char* data) {
-  uint8_t packet[] = { 0x52, 0x52, 0x57, 0x48, 0x02 };
+bool HwinfoClient::isMagicPacket(char* data) {
+  uint8_t packet[] = { 0x52, 0x52, 0x57, 0x48 /*, 0x01 or 0x02 */ };
   return memcmp(packet, data, sizeof packet) == 0;
 }
 
