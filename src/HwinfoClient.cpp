@@ -129,7 +129,11 @@ void HwinfoClient::sendHwinfoPacket(char* packet, uint8_t len) {
 }
 
 
-HwinfoClient::HwinfoClient(const char* host):HWINFO_HOST(host) {
+HwinfoClient::HwinfoClient(const char* host, uint8_t polling_rate, uint8_t timeout):
+  HWINFO_HOST(host)
+  , HWINFO_POLLING_RATE(polling_rate)
+  , HWINFO_CONNECTION_TIMEOUT(timeout)
+{
   client = new AsyncClient;
   client->onConnect([](void *obj, AsyncClient *c){ ((HwinfoClient*)(obj))->onConnect(); }, this);
   client->onPoll([](void *obj, AsyncClient* c){ (void)c; ((HwinfoClient*)(obj))->onPoll(); }, this);

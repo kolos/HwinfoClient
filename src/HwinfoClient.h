@@ -25,8 +25,8 @@ class HwinfoClient
   private:
     const char* HWINFO_HOST;
     const uint16_t HWINFO_PORT = 27007;
-    const uint8_t HWINFO_POLLING_RATE = 10; // seconds
-    const uint8_t HWINFO_CONNECTION_TIMEOUT = 15; // seconds
+    const uint8_t HWINFO_POLLING_RATE; // seconds
+    const uint8_t HWINFO_CONNECTION_TIMEOUT; // seconds
 
     const static uint16_t HWINFO_OFFSET_POLLING_TIME = 24;
     const static uint16_t HWINFO_OFFSET_READINGS_OFFSET = 44;
@@ -72,7 +72,7 @@ class HwinfoClient
     void connect();
     void setSensorReadHandler(HwinfoSensorReadCompletedFunction cb);
 
-    HwinfoClient(const char* host);
+    HwinfoClient(const char* host, uint8_t polling_rate = 10, uint8_t timeout = 15);
     ~HwinfoClient();
 };
 
