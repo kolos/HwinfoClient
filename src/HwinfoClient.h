@@ -6,7 +6,7 @@
 
 namespace HwinfoClientLib {
 
-typedef std::function<void(uint, uint, double)> HwinfoSensorReadCompletedFunction;
+typedef std::function<void(uint32_t, uint32_t, double)> HwinfoSensorReadCompletedFunction;
 
 template <typename T> 
 union HwValue { 
@@ -15,8 +15,8 @@ union HwValue {
 }; 
 
 struct HwSensor{
-  HwValue<uint> group;
-  HwValue<uint> id;
+  HwValue<uint32_t> group;
+  HwValue<uint32_t> id;
   HwValue<double> value;
 };
 
@@ -38,9 +38,9 @@ class HwinfoClient
     const static uint16_t HWINFO_OFFSET_READING_VALUE = 296;
 
     HwValue<long> polling_time;
-    HwValue<uint> offset_of_readings;
-    HwValue<uint> size_of_reading;
-    HwValue<uint> number_of_readings;
+    HwValue<uint32_t> offset_of_readings;
+    HwValue<uint32_t> size_of_reading;
+    HwValue<uint32_t> number_of_readings;
     HwSensor reading;
 
     ulong magic_received_time;
@@ -70,6 +70,8 @@ class HwinfoClient
     void handleData(char *data, size_t len);        
   public:
     void connect();
+    void disconnect();
+    uint32_t getNumberOfReadings();
     void setSensorReadHandler(HwinfoSensorReadCompletedFunction cb);
 
     HwinfoClient(const char* host, uint8_t polling_rate = 10, uint8_t timeout = 15);

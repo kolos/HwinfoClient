@@ -34,7 +34,7 @@ void HwinfoClient::parse(char *data, size_t len) {
   valueParsed(&size_of_reading, HWINFO_OFFSET_READINGS_SIZE, data, len);
   valueParsed(&number_of_readings, HWINFO_OFFSET_READINGS, data, len);
 
-  for(uint16_t reading_offset = offset_of_readings.value; reading_offset < idx + len; reading_offset += size_of_reading.value){
+  for(uint16_t reading_offset = offset_of_readings.value; reading_offset && reading_offset < idx + len; reading_offset += size_of_reading.value){
     valueParsed(&reading.group, HWINFO_OFFSET_READING_GROUP + reading_offset, data, len);
     valueParsed(&reading.id, HWINFO_OFFSET_READING_ID + reading_offset, data, len);
     bool reading_value_parsed = valueParsed(&reading.value, HWINFO_OFFSET_READING_VALUE + reading_offset, data, len);
@@ -78,6 +78,14 @@ bool HwinfoClient::isDataStartPacket(char* data) {
 bool HwinfoClient::isMagicPacket(char* data) {
   uint8_t packet[] = { 0x52, 0x52, 0x57, 0x48 /*, 0x01 or 0x02 */ };
   return memcmp(packet, data, sizeof packet) == 0;
+}
+
+uint32_t HwinfoClient::getNumberOfReadings() {
+  return number_of_readings.value;
+}
+
+void HwinfoClient::disconnect() {
+  client->close();
 }
 
 void HwinfoClient::connect() {
